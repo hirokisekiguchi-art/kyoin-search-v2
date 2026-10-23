@@ -399,7 +399,7 @@ export default function App() {
         />
 
         {/* 4. Prefecture Explorer Section */}
-        <div ref={prefectureRef}>
+        <div ref={prefectureRef} id="regions">
           <PrefectureExplorer
             onSelectPrefecture={handleSelectPrefecture}
             schools={schools}
@@ -408,7 +408,7 @@ export default function App() {
         </div>
 
         {/* 5. Recent Gazette Updates Section */}
-        <div ref={updatesRef}>
+        <div ref={updatesRef} id="updates">
           <RecentUpdates
             updates={updates}
             onSelectUpdate={handleSelectUpdate}
