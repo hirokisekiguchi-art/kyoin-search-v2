@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   TeacherCandidate, 
   School, 
@@ -24,8 +24,7 @@ import {
 import { Header } from './components/Header';
 import { HeroSearch } from './components/HeroSearch';
 import { SearchResults } from './components/SearchResults';
-import { TeacherDetailModal } from './components/TeacherDetailModal';
-import { SchoolDetailModal } from './components/SchoolDetailModal';
+import { ArchiveDetailPage } from './components/ArchiveDetailPage';
 import { SourceDetailsModal } from './components/SourceDetailsModal';
 import { PrefectureExplorer } from './components/PrefectureExplorer';
 import { RecentUpdates } from './components/RecentUpdates';
@@ -57,8 +56,9 @@ export default function App() {
   });
 
   // Modal Dialog States
-  const [selectedTeacher, setSelectedTeacher] = useState<TeacherCandidate | null>(null);
-  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const initialParams = new URLSearchParams(window.location.search);
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherCandidate | null>(() => INITIAL_TEACHERS.find((teacher) => teacher.id === initialParams.get('teacher')) || null);
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(() => INITIAL_SCHOOLS.find((school) => school.id === initialParams.get('school')) || null);
   const [selectedSource, setSelectedSource] = useState<OfficialSource | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
@@ -70,6 +70,16 @@ export default function App() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const prefectureRef = useRef<HTMLDivElement>(null);
   const updatesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const restoreRoute = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSelectedTeacher(teachers.find((teacher) => teacher.id === params.get('teacher')) || null);
+      setSelectedSchool(schools.find((school) => school.id === params.get('school')) || null);
+    };
+    window.addEventListener('popstate', restoreRoute);
+    return () => window.removeEventListener('popstate', restoreRoute);
+  }, [schools, teachers]);
 
   // 表記ゆれを吸収し、氏名・学校名を優先した関連度順で表示
   const filteredTeachers = useMemo(() => {
@@ -195,17 +205,44 @@ export default function App() {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const openTeacher = (teacher: TeacherCandidate) => {
+    setSelectedSchool(null);
+    setSelectedTeacher(teacher);
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('teacher', teacher.id);
+    window.history.pushState({}, '', url);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openSchool = (school: School) => {
+    setSelectedTeacher(null);
+    setSelectedSchool(school);
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('school', school.id);
+    window.history.pushState({}, '', url);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeDetailPage = () => {
+    setSelectedTeacher(null);
+    setSelectedSchool(null);
+    window.history.pushState({}, '', window.location.pathname);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectSchoolById = (schoolId: string) => {
     const school = schools.find((s) => s.id === schoolId);
     if (school) {
-      setSelectedSchool(school);
+      openSchool(school);
     }
   };
 
   const handleSelectTeacherById = (teacherId: string) => {
     const teacher = teachers.find((t) => t.id === teacherId);
     if (teacher) {
-      setSelectedTeacher(teacher);
+      openTeacher(teacher);
     }
   };
 
@@ -237,6 +274,7 @@ export default function App() {
   };
 
   const handleNavClick = (target: 'teachers' | 'schools' | 'updates' | 'regions' | 'about' | 'review') => {
+    if (selectedTeacher || selectedSchool) closeDetailPage();
     if (target === 'teachers') {
       setFilters((prev) => ({ ...prev, searchType: 'teacher' }));
       resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -376,13 +414,22 @@ export default function App() {
       {/* 1. Header */}
       <Header onNavClick={handleNavClick} />
 
+      {selectedTeacher || selectedSchool ? (
+        <ArchiveDetailPage
+          teacher={selectedTeacher}
+          school={selectedSchool}
+          allTeachers={teachers}
+          allSchools={schools}
+          onBack={closeDetailPage}
+          onSelectTeacher={openTeacher}
+          onSelectSchool={openSchool}
+          onOpenSource={setSelectedSource}
+          onToggleCompare={handleToggleCompare}
+          isCompared={Boolean(selectedSchool && comparedSchoolIds.includes(selectedSchool.id))}
+        />
+      ) : <>
       {/* 2. Hero Search Area */}
-      <HeroSearch
-        filters={filters}
-        onFilterChange={setFilters}
-        onQuickSearch={handleQuickSearch}
-        sampleSuggestions={sampleSuggestions}
-      />
+      <HeroSearch filters={filters} onFilterChange={setFilters} onQuickSearch={handleQuickSearch} sampleSuggestions={sampleSuggestions} />
 
       {/* 3. Main Results Section */}
       <main className="relative z-0 flex-1" ref={resultsRef}>
@@ -391,9 +438,9 @@ export default function App() {
           schools={filteredSchools}
           filters={filters}
           onFilterChange={setFilters}
-          onSelectTeacher={setSelectedTeacher}
+          onSelectTeacher={openTeacher}
           onSelectSchoolById={handleSelectSchoolById}
-          onSelectSchool={setSelectedSchool}
+          onSelectSchool={openSchool}
           onToggleCompare={handleToggleCompare}
           comparedSchoolIds={comparedSchoolIds}
         />
@@ -415,35 +462,12 @@ export default function App() {
           />
         </div>
       </main>
+      </>}
 
       {/* 6. Footer */}
       <Footer onNavClick={handleNavClick} />
 
       {/* MODALS */}
-      {/* Teacher Profile & Career Timeline Modal */}
-      <TeacherDetailModal
-        teacher={selectedTeacher}
-        onClose={() => setSelectedTeacher(null)}
-        onSelectSchool={(schoolId) => {
-          setSelectedTeacher(null);
-          handleSelectSchoolById(schoolId);
-        }}
-        onSelectTeacherById={handleSelectTeacherById}
-        onOpenSource={setSelectedSource}
-        allTeachers={teachers}
-      />
-
-      {/* School Profile & Annual Personnel Roster Modal */}
-      <SchoolDetailModal
-        school={selectedSchool}
-        onClose={() => setSelectedSchool(null)}
-        onSelectTeacher={(teacherId) => {
-          setSelectedSchool(null);
-          handleSelectTeacherById(teacherId);
-        }}
-        onOpenSource={setSelectedSource}
-      />
-
       {/* Official Source Inspector Modal */}
       <SourceDetailsModal
         source={selectedSource}
