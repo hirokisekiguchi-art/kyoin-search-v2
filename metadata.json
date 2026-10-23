@@ -1,0 +1,6 @@
+{
+  "name": "教員サーチ - 公立学校人事アーカイブ",
+  "description": "「あの先生、今どこにいるんだろう？」公立学校・教育機関の教職員人事異動公報を検索できるアーカイブサービス。南関東スモールスタート公開中。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
