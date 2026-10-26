@@ -26,11 +26,9 @@ import { HeroSearch } from './components/HeroSearch';
 import { SearchResults } from './components/SearchResults';
 import { ArchiveDetailPage } from './components/ArchiveDetailPage';
 import { SourceDetailsModal } from './components/SourceDetailsModal';
-import { PrefectureExplorer } from './components/PrefectureExplorer';
-import { RecentUpdates } from './components/RecentUpdates';
 import { ReviewSystemModal } from './components/ReviewSystemModal';
 import { AboutArchiveModal } from './components/AboutArchiveModal';
-import { Footer } from './components/Footer';
+import { ArchiveBottom } from './components/ArchiveBottom';
 import { normalizeSearchText, scoreSchool, scoreTeacher, sortByRelevance } from './utils/search';
 import { V2Intro } from './components/V2Intro';
 import { SchoolCompareModal } from './components/SchoolCompareModal';
@@ -68,8 +66,6 @@ export default function App() {
 
   // Refs for scrolling to sections
   const resultsRef = useRef<HTMLDivElement>(null);
-  const prefectureRef = useRef<HTMLDivElement>(null);
-  const updatesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const restoreRoute = () => {
@@ -282,9 +278,9 @@ export default function App() {
       setFilters((prev) => ({ ...prev, searchType: 'school' }));
       resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
     } else if (target === 'updates') {
-      updatesRef.current?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('updates')?.scrollIntoView({ behavior: 'smooth' });
     } else if (target === 'regions') {
-      prefectureRef.current?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' });
     } else if (target === 'about') {
       setIsAboutModalOpen(true);
     } else if (target === 'review') {
@@ -445,27 +441,21 @@ export default function App() {
           comparedSchoolIds={comparedSchoolIds}
         />
 
-        {/* 4. Prefecture Explorer Section */}
-        <div ref={prefectureRef} id="regions">
-          <PrefectureExplorer
-            onSelectPrefecture={handleSelectPrefecture}
-            schools={schools}
-            teachers={teachers}
-          />
-        </div>
-
-        {/* 5. Recent Gazette Updates Section */}
-        <div ref={updatesRef} id="updates">
-          <RecentUpdates
-            updates={updates}
-            onSelectUpdate={handleSelectUpdate}
-          />
-        </div>
       </main>
       </>}
 
-      {/* 6. Footer */}
-      <Footer onNavClick={handleNavClick} />
+      {!selectedTeacher && !selectedSchool && <div>
+          <ArchiveBottom
+            schools={schools}
+            teachers={teachers}
+            updates={updates}
+            onSelectPrefecture={handleSelectPrefecture}
+            onSelectUpdate={handleSelectUpdate}
+            onOpenSource={setSelectedSource}
+            onSelectTeacher={openTeacher}
+            onNavClick={handleNavClick}
+          />
+      </div>}
 
       {/* MODALS */}
       {/* Official Source Inspector Modal */}
