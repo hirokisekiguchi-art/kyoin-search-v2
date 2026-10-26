@@ -32,7 +32,7 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
         <header className="v2-record-hero">
           <button className="v2-record-back" onClick={onBack}><ArrowLeft />索引へ戻る</button>
           <p>PERSONNEL INDEX / {teacher.latestFiscalYear}</p>
-          <div className="v2-record-title"><span className="v2-record-monogram"><User /></span><div>{teacher.kana && <small>{teacher.kana}</small>}<h1>{teacher.name}</h1><p>{teacher.currentPosition}</p></div><span className={`v2-record-status ${teacher.verificationStatus === '確認済み' ? 'verified' : ''}`}><ShieldCheck />{teacher.verificationStatus}</span></div>
+          <div className="v2-record-title"><span className="v2-record-monogram"><User /></span><div>{teacher.kana && <small>{teacher.kana}</small>}<h1>{teacher.name}</h1><p>{teacher.currentPosition}</p><span className={`v2-record-status ${teacher.verificationStatus === '確認済み' ? 'verified' : ''}`}><ShieldCheck />{teacher.verificationStatus}</span></div><div className="v2-record-edition"><span>最新確認</span><strong>{teacher.latestFiscalYear}</strong><small>年度公報</small></div></div>
           <dl><div><dt>最新確認所属</dt><dd><button onClick={() => currentSchool && onSelectSchool(currentSchool)}>{teacher.currentSchoolName}<ArrowUpRight /></button></dd></div><div><dt>地域</dt><dd>{teacher.prefecture} {teacher.municipality}</dd></div><div><dt>最新年度</dt><dd>{teacher.latestFiscalYear}年度</dd></div><div><dt>収録記録</dt><dd>{teacher.timeline.length}件</dd></div></dl>
         </header>
 
@@ -66,7 +66,7 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
       <nav className="v2-record-breadcrumb"><button onClick={onBack}>人事アーカイブ</button><span>／</span><span>学校</span><span>／</span><b>{target.name}</b></nav>
       <header className="v2-record-hero school">
         <button className="v2-record-back" onClick={onBack}><ArrowLeft />索引へ戻る</button><p>SCHOOL REGISTER / {target.latestConfirmedYear}</p>
-        <div className="v2-record-title"><span className="v2-record-monogram"><Building2 /></span><div><small>{target.schoolType}・{target.founder}</small><h1>{target.name}</h1><p><MapPin />{target.prefecture} {target.municipality} {target.address}</p></div></div>
+        <div className="v2-record-title"><span className="v2-record-monogram"><Building2 /></span><div><small>{target.schoolType}・{target.founder}</small><h1>{target.name}</h1><p><MapPin />{target.prefecture} {target.municipality} {target.address}</p></div><div className="v2-record-edition"><span>最新確認</span><strong>{target.latestConfirmedYear}</strong><small>年度公報</small></div></div>
         <dl><div><dt>最新年度</dt><dd>{target.latestConfirmedYear}年度</dd></div><div><dt>人事記録</dt><dd>{target.totalConfirmedPersonnelCount}件</dd></div><div><dt>年度台帳</dt><dd>{target.personnelByYear.length}年分</dd></div><div><dt>学校沿革</dt><dd>{target.history.length}件</dd></div></dl>
         <div className="v2-record-actions"><button className={isCompared ? 'is-added' : ''} onClick={() => onToggleCompare(target)}>{isCompared ? <Check /> : <Plus />}{isCompared ? '比較に追加済み' : '学校を比較'}</button><a href={target.googleMapsUrl || getSchoolGoogleMapsUrl(target)} target="_blank" rel="noreferrer"><MessageSquare />Googleマップで口コミを見る<ExternalLink /></a></div>
       </header>
