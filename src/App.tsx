@@ -33,6 +33,7 @@ import { normalizeSearchText, scoreSchool, scoreTeacher, sortByRelevance } from 
 import { V2Intro } from './components/V2Intro';
 import { SchoolCompareModal } from './components/SchoolCompareModal';
 import { BookOpen, Scale, X } from 'lucide-react';
+import { trackEvent, trackPageView } from './utils/analytics';
 
 export default function App() {
   // Archive Data States
@@ -76,6 +77,19 @@ export default function App() {
     window.addEventListener('popstate', restoreRoute);
     return () => window.removeEventListener('popstate', restoreRoute);
   }, [schools, teachers]);
+
+  useEffect(() => {
+    const trackGoogleMapsClick = (event: MouseEvent) => {
+      const anchor = (event.target as HTMLElement).closest('a');
+      if (!anchor?.href.includes('google.com/maps')) return;
+      trackEvent('google_maps_review_click', {
+        link_url: anchor.href,
+        link_text: anchor.textContent?.trim().slice(0, 100),
+      });
+    };
+    document.addEventListener('click', trackGoogleMapsClick);
+    return () => document.removeEventListener('click', trackGoogleMapsClick);
+  }, []);
 
   // 表記ゆれを吸収し、氏名・学校名を優先した関連度順で表示
   const filteredTeachers = useMemo(() => {
@@ -198,6 +212,7 @@ export default function App() {
       query,
       searchType: type,
     });
+    trackEvent('search', { search_term: query, search_type: type });
     resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -208,6 +223,8 @@ export default function App() {
     url.search = '';
     url.searchParams.set('teacher', teacher.id);
     window.history.pushState({}, '', url);
+    trackEvent('view_teacher_detail', { teacher_id: teacher.id, latest_fiscal_year: teacher.latestFiscalYear });
+    trackPageView(`教員詳細 | ${teacher.name}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -218,6 +235,8 @@ export default function App() {
     url.search = '';
     url.searchParams.set('school', school.id);
     window.history.pushState({}, '', url);
+    trackEvent('view_school_detail', { school_id: school.id, prefecture: school.prefecture, school_type: school.schoolType });
+    trackPageView(`学校詳細 | ${school.name}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -225,6 +244,7 @@ export default function App() {
     setSelectedTeacher(null);
     setSelectedSchool(null);
     window.history.pushState({}, '', window.location.pathname);
+    trackPageView('教員サーチ V2 | THE OPEN INDEX');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
