@@ -224,3 +224,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .v2-current-teachers-note{display:flex;align-items:flex-start;gap:11px;margin-bottom:18px;padding:14px 16px;color:#596b5c;background:#eaede4;border-left:3px solid #71876f}.v2-current-teachers-note>svg{width:17px;flex:none}.v2-current-teachers-note p{margin:0}.v2-current-teachers-note b{display:block;font-size:10px}.v2-current-teachers-note span{display:block;margin-top:5px;color:#7b877c;font-size:8px;line-height:1.9}.v2-current-teachers-summary{display:flex;align-items:baseline;gap:8px;padding:14px 0;border-top:1px solid #c6cec1;border-bottom:1px solid #c6cec1}.v2-current-teachers-summary span,.v2-current-teachers-summary small{color:#7f8c80;font-size:9px}.v2-current-teachers-summary strong{color:#324a38;font:500 28px "Yu Mincho",serif}.v2-current-teachers-list{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #cbd2c7}.v2-current-teachers-list>button{display:grid;grid-template-columns:26px minmax(0,1fr) 65px 66px 15px;align-items:center;gap:10px;padding:15px 10px;text-align:left;border-bottom:1px solid #d6dbd2;transition:.18s}.v2-current-teachers-list>button:nth-child(odd){border-right:1px solid #d6dbd2}.v2-current-teachers-list>button:hover{background:#fffdf5}.v2-current-teachers-list>button>span{color:#9ba59b;font:italic 9px Georgia,serif}.v2-current-teachers-list b{display:block;font:600 14px "Yu Mincho",serif}.v2-current-teachers-list div small{display:block;margin-top:3px;color:#788579;font-size:8px}.v2-current-teachers-list time{color:#4f6653;font:500 12px "Yu Mincho",serif}.v2-current-teachers-list time small{display:block;color:#909a90;font:7px "Noto Sans JP",sans-serif}.v2-current-teachers-list em{padding:4px 5px;text-align:center;color:#986a4f;border:1px solid #cfad99;font-size:7px;font-style:normal}.v2-current-teachers-list em.verified{color:#506d54;border-color:#9daf9b}.v2-current-teachers-list svg{width:13px;color:#607661}.v2-current-teachers-more{display:block;margin:17px auto 0;padding:9px 16px;color:#506853;border:1px solid #aebbaa;background:#f8f6ed;font-size:9px}.v2-current-teachers-more:hover{background:#e9ede3}
 @media(max-width:850px){.v2-current-teachers-list{grid-template-columns:1fr}.v2-current-teachers-list>button:nth-child(odd){border-right:0}.v2-record-index{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.v2-current-teachers-list>button{grid-template-columns:22px minmax(0,1fr) 55px 13px}.v2-current-teachers-list em{display:none}}
+
+/* Detail folio additions inspired by the supplied register-style proposal. */
+.v2-folio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid #c4ccbf;border-left:1px solid #c4ccbf;background:rgb(255 253 245/.55)}
+.v2-folio-grid>div{min-height:82px;padding:16px 18px;border-right:1px solid #c4ccbf;border-bottom:1px solid #c4ccbf}
+.v2-folio-grid>div.wide{grid-column:1/-1}
+.v2-folio-grid small{display:block;margin-bottom:8px;color:#879287;font-size:8px;letter-spacing:.08em}
+.v2-folio-grid strong{display:flex;align-items:center;gap:7px;color:#344a39;font:600 13px/1.8 "Yu Mincho",serif;overflow-wrap:anywhere}
+.v2-folio-grid strong svg{width:14px;flex:none;color:#718772}
+.v2-source-ledger,.v2-all-people-list{display:grid;border-top:1px solid #c6cec1}
+.v2-source-ledger>button,.v2-all-people-list>button{display:grid;grid-template-columns:32px minmax(0,1fr) 18px;align-items:center;gap:12px;padding:16px 8px;text-align:left;border-bottom:1px solid #d2d8cf;transition:.18s}
+.v2-source-ledger>button:hover,.v2-all-people-list>button:not(:disabled):hover{padding-left:14px;background:#fffdf5}
+.v2-source-ledger>button>span,.v2-all-people-list>button>span{color:#9aa59a;font:italic 9px Georgia,serif}
+.v2-source-ledger b,.v2-all-people-list b{display:block;color:#344a39;font:600 13px/1.8 "Yu Mincho",serif}
+.v2-source-ledger small,.v2-all-people-list small{display:block;color:#7e8a7f;font-size:8px;line-height:1.8}
+.v2-source-ledger svg,.v2-all-people-list svg{width:14px;color:#607661}
+.v2-people-search{display:flex;align-items:center;gap:10px;margin:18px 0 12px;padding:10px 13px;border:1px solid #bfc9bc;background:#fffdf7}
+.v2-people-search svg{width:15px;color:#718471}
+.v2-people-search input{width:100%;outline:0;color:#344a39;background:transparent;font-size:10px}
+.v2-people-search input::placeholder{color:#9aa49a}
+.v2-all-people-list>button{grid-template-columns:32px minmax(0,1fr) 72px 84px}
+.v2-all-people-list time{color:#4f6653;font:500 13px "Yu Mincho",serif}
+.v2-all-people-list time small{font-family:"Noto Sans JP",sans-serif;font-size:7px}
+.v2-all-people-list em{color:#9a785f;font-size:7px;font-style:normal;text-align:right}
+.v2-all-people-list>button:disabled{cursor:default;opacity:.72}
+@media(max-width:700px){.v2-folio-grid{grid-template-columns:1fr}.v2-folio-grid>div.wide{grid-column:auto}.v2-all-people-list>button{grid-template-columns:25px minmax(0,1fr) 60px}.v2-all-people-list em{display:none}}

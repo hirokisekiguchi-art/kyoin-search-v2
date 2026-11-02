@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, ArrowUpRight, BookOpen, Building2, Check, ExternalLink, FileText, History, MapPin, MessageSquare, Plus, ShieldCheck, User, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowUpRight, BookOpen, Building2, Check, ExternalLink, FileText, Fingerprint, History, MapPin, MessageSquare, Plus, Search, ShieldCheck, User, Users } from 'lucide-react';
 import { getSchoolGoogleMapsUrl, OFFICIAL_SOURCES_DATA } from '../data/archiveData';
 import { OfficialSource, School, TeacherCandidate } from '../types';
 
@@ -19,6 +19,7 @@ interface ArchiveDetailPageProps {
 export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, school, allTeachers, allSchools, onBack, onSelectTeacher, onSelectSchool, onOpenSource, onToggleCompare, isCompared }) => {
   const [year, setYear] = useState<number | null>(null);
   const [showAllCurrentTeachers, setShowAllCurrentTeachers] = useState(false);
+  const [peopleQuery, setPeopleQuery] = useState('');
   const currentSchool = teacher ? allSchools.find((candidate) => candidate.id === teacher.currentSchoolId) : undefined;
   const relatedTeachers = useMemo(() => teacher ? allTeachers.filter((candidate) => candidate.id !== teacher.id && candidate.currentSchoolId === teacher.currentSchoolId).slice(0, 8) : [], [allTeachers, teacher]);
   const homonyms = useMemo(() => teacher ? allTeachers.filter((candidate) => candidate.id !== teacher.id && candidate.name === teacher.name).slice(0, 6) : [], [allTeachers, teacher]);
@@ -28,12 +29,18 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
 
   useEffect(() => {
     setShowAllCurrentTeachers(false);
+    setPeopleQuery('');
   }, [school?.id]);
 
   if (!teacher && !school) return null;
 
   if (teacher) {
     const timeline = [...teacher.timeline].sort((a, b) => b.fiscalYear - a.fiscalYear);
+    const subjects = Array.from(new Set(timeline.flatMap((event) => {
+      const match = event.note?.match(/(?:教科|担当)[：:]?\s*([^、。・/]+)/);
+      return match?.[1] ? [match[1].trim()] : [];
+    })));
+    const sourceCount = new Set(timeline.map((event) => event.source.id)).size;
     return (
       <main className="v2-record-page">
         <nav className="v2-record-breadcrumb"><button onClick={onBack}>人事アーカイブ</button><span>／</span><span>先生</span><span>／</span><b>{teacher.name}</b></nav>
@@ -41,17 +48,18 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
           <button className="v2-record-back" onClick={onBack}><ArrowLeft />索引へ戻る</button>
           <p>PERSONNEL INDEX / {teacher.latestFiscalYear}</p>
           <div className="v2-record-title"><span className="v2-record-monogram"><User /></span><div>{teacher.kana && <small>{teacher.kana}</small>}<h1>{teacher.name}</h1><p>{teacher.currentPosition}</p><span className={`v2-record-status ${teacher.verificationStatus === '確認済み' ? 'verified' : ''}`}><ShieldCheck />{teacher.verificationStatus}</span></div><div className="v2-record-edition"><span>最新確認</span><strong>{teacher.latestFiscalYear}</strong><small>年度公報</small></div></div>
-          <dl><div><dt>最新確認所属</dt><dd><button onClick={() => currentSchool && onSelectSchool(currentSchool)}>{teacher.currentSchoolName}<ArrowUpRight /></button></dd></div><div><dt>地域</dt><dd>{teacher.prefecture} {teacher.municipality}</dd></div><div><dt>最新年度</dt><dd>{teacher.latestFiscalYear}年度</dd></div><div><dt>収録記録</dt><dd>{teacher.timeline.length}件</dd></div></dl>
+          <dl><div><dt>最新確認所属</dt><dd><button onClick={() => currentSchool && onSelectSchool(currentSchool)}>{teacher.currentSchoolName}<ArrowUpRight /></button></dd></div><div><dt>担当教科</dt><dd>{subjects.length ? subjects.join('・') : '公報記載なし'}</dd></div><div><dt>地域</dt><dd>{teacher.prefecture} {teacher.municipality}</dd></div><div><dt>最新年度</dt><dd>{teacher.latestFiscalYear}年度</dd></div><div><dt>収録記録</dt><dd>{teacher.timeline.length}件</dd></div><div><dt>典拠資料</dt><dd>{sourceCount}件</dd></div></dl>
         </header>
 
         {(teacher.homonymCandidateCount || homonyms.length > 0) && <aside className="v2-record-warning"><AlertTriangle /><div><b>同姓同名の候補があります</b><p>{teacher.homonymNote || '所属・地域・役職を照合し、別人物候補として分けて表示しています。'}</p>{homonyms.length > 0 && <div>{homonyms.map((candidate, index) => <button key={`${candidate.id}-${index}`} onClick={() => onSelectTeacher(candidate)}>{candidate.prefecture}・{candidate.currentSchoolName}<ArrowUpRight /></button>)}</div>}</div></aside>}
 
         <div className="v2-record-layout">
-          <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#career">01 経歴</a><a href="#related">02 同じ学校の先生</a><a href="#sources">03 出典</a></aside>
+          <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#profile">01 人物索引</a><a href="#career">02 経歴</a><a href="#related">03 同じ学校の先生</a><a href="#sources">04 出典</a></aside>
           <div className="v2-record-body">
-            <section id="career" className="v2-record-section"><div className="v2-section-heading"><span>01</span><div><p>CAREER TIMELINE</p><h2>人事異動・所属経歴</h2></div></div><ol className="v2-career-list">{timeline.map((event, index) => <li key={`${event.id}-${index}`}><time>{event.fiscalYear}<small>年度</small></time><div className="v2-career-rule"><i /></div><article><div><span>{event.eventType}{event.isPromotion ? '・昇任' : ''}</span><small>{event.effectiveDate} 発令</small></div><h3><button onClick={() => { const target = allSchools.find((candidate) => candidate.id === event.schoolId); if (target) onSelectSchool(target); }}>{event.schoolName}<ArrowUpRight /></button></h3><p>{event.position}</p>{event.previousSchoolName && <p className="v2-career-from">前所属：{event.previousSchoolName} {event.previousPosition}</p>}{event.note && <p>{event.note}</p>}<button className="v2-source-link" onClick={() => onOpenSource(event.source)}><FileText />公報の該当箇所を見る</button></article></li>)}</ol></section>
-            <section id="related" className="v2-record-section"><div className="v2-section-heading"><span>02</span><div><p>RELATED PEOPLE</p><h2>同じ学校で確認された先生</h2></div></div>{relatedTeachers.length ? <div className="v2-related-list">{relatedTeachers.map((candidate, index) => <button key={`${candidate.id}-${index}`} onClick={() => onSelectTeacher(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.currentPosition}・{candidate.latestFiscalYear}年度</small></div><ArrowUpRight /></button>)}</div> : <p className="v2-record-empty">現在表示できる関連候補はありません。</p>}</section>
-            <section id="sources" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>SOURCE POLICY</p><h2>典拠と掲載方針</h2></div></div><p className="v2-record-prose">教育委員会の人事異動公報・告示を年度別に記録しています。同姓同名は氏名だけで統合せず、所属・役職・異動履歴を候補単位で表示します。</p></section>
+            <section id="profile" className="v2-record-section"><div className="v2-section-heading"><span>01</span><div><p>PERSON INDEX</p><h2>人物索引</h2></div></div><div className="v2-folio-grid"><div><small>人物ID</small><strong><Fingerprint />{teacher.id}</strong></div><div><small>氏名表記</small><strong>{teacher.name}</strong></div><div><small>ふりがな</small><strong>{teacher.kana || '公報記載なし'}</strong></div><div><small>学校種</small><strong>{teacher.schoolType}</strong></div><div><small>担当教科</small><strong>{subjects.length ? subjects.join('・') : '公報記載なし'}</strong></div><div><small>照合状態</small><strong><ShieldCheck />{teacher.verificationStatus}</strong></div></div><p className="v2-record-prose">同姓同名は氏名だけで統合せず、人物ID・所属・役職・異動履歴を候補単位で表示しています。</p></section>
+            <section id="career" className="v2-record-section"><div className="v2-section-heading"><span>02</span><div><p>CAREER TIMELINE</p><h2>人事異動・所属経歴</h2></div></div><ol className="v2-career-list">{timeline.map((event, index) => <li key={`${event.id}-${index}`}><time>{event.fiscalYear}<small>年度</small></time><div className="v2-career-rule"><i /></div><article><div><span>{event.eventType}{event.isPromotion && event.eventType !== '昇任' ? '・昇任' : ''}</span><small>{event.effectiveDate} 発令</small></div><h3><button onClick={() => { const target = allSchools.find((candidate) => candidate.id === event.schoolId); if (target) onSelectSchool(target); }}>{event.schoolName}<ArrowUpRight /></button></h3><p>{event.position}</p>{event.previousSchoolName && <p className="v2-career-from">前所属：{event.previousSchoolName} {event.previousPosition}</p>}{event.note && <p>{event.note}</p>}<button className="v2-source-link" onClick={() => onOpenSource(event.source)}><FileText />公報の該当箇所を見る</button></article></li>)}</ol></section>
+            <section id="related" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>RELATED PEOPLE</p><h2>同じ学校で確認された先生</h2></div></div>{relatedTeachers.length ? <div className="v2-related-list">{relatedTeachers.map((candidate, index) => <button key={`${candidate.id}-${index}`} onClick={() => onSelectTeacher(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.currentPosition}・{candidate.latestFiscalYear}年度</small></div><ArrowUpRight /></button>)}</div> : <p className="v2-record-empty">現在表示できる関連候補はありません。</p>}</section>
+            <section id="sources" className="v2-record-section"><div className="v2-section-heading"><span>04</span><div><p>SOURCE LEDGER</p><h2>典拠資料</h2></div></div><div className="v2-source-ledger">{Array.from(new Map(timeline.map((event) => [event.source.id, event.source])).values()).map((source, index) => <button key={source.id} onClick={() => onOpenSource(source)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{source.documentTitle}</b><small>{source.issuer}・{source.publishedAt}・{source.pageOrSheet}</small></div><FileText /></button>)}</div><p className="v2-record-prose">教育委員会の人事異動公報・告示を年度別に記録しています。資料を選ぶと該当箇所・原文・照合情報を確認できます。</p></section>
           </div>
         </div>
       </main>
@@ -68,6 +76,13 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
     { label: '退職', people: roster.retired },
   ] : [];
   const relatedSchools = allSchools.filter((candidate) => candidate.id !== target.id && candidate.prefecture === target.prefecture && candidate.municipality === target.municipality).slice(0, 6);
+  const historicalPeople = Array.from(new Map(target.personnelByYear.flatMap((record) => (
+    [record.principal, record.vicePrincipal, ...record.transferredIn, ...record.transferredOut, ...record.newlyAppointed, ...record.retired]
+      .filter((person): person is NonNullable<typeof person> => Boolean(person))
+      .map((person) => [`${person.teacherId}-${record.fiscalYear}`, { ...person, fiscalYear: record.fiscalYear }] as const)
+  ))).values())
+    .filter((person) => person.name.includes(peopleQuery.trim()))
+    .sort((a, b) => b.fiscalYear - a.fiscalYear || a.name.localeCompare(b.name, 'ja'));
 
   return (
     <main className="v2-record-page">
@@ -75,14 +90,15 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
       <header className="v2-record-hero school">
         <button className="v2-record-back" onClick={onBack}><ArrowLeft />索引へ戻る</button><p>SCHOOL REGISTER / {target.latestConfirmedYear}</p>
         <div className="v2-record-title"><span className="v2-record-monogram"><Building2 /></span><div><small>{target.schoolType}・{target.founder}</small><h1>{target.name}</h1><p><MapPin />{target.prefecture} {target.municipality} {target.address}</p></div><div className="v2-record-edition"><span>最新確認</span><strong>{target.latestConfirmedYear}</strong><small>年度公報</small></div></div>
-        <dl><div><dt>最新年度</dt><dd>{target.latestConfirmedYear}年度</dd></div><div><dt>人事記録</dt><dd>{target.totalConfirmedPersonnelCount}件</dd></div><div><dt>年度台帳</dt><dd>{target.personnelByYear.length}年分</dd></div><div><dt>学校沿革</dt><dd>{target.history.length}件</dd></div></dl>
+        <dl><div><dt>設置者</dt><dd>{target.founder}</dd></div><div><dt>学校ID</dt><dd>{target.id}</dd></div><div><dt>最新年度</dt><dd>{target.latestConfirmedYear}年度</dd></div><div><dt>人事記録</dt><dd>{target.totalConfirmedPersonnelCount}件</dd></div><div><dt>年度台帳</dt><dd>{target.personnelByYear.length}年分</dd></div><div><dt>学校沿革</dt><dd>{target.history.length}件</dd></div></dl>
         <div className="v2-record-actions"><button className={isCompared ? 'is-added' : ''} onClick={() => onToggleCompare(target)}>{isCompared ? <Check /> : <Plus />}{isCompared ? '比較に追加済み' : '学校を比較'}</button><a href={target.googleMapsUrl || getSchoolGoogleMapsUrl(target)} target="_blank" rel="noreferrer"><MessageSquare />Googleマップで口コミを見る<ExternalLink /></a></div>
       </header>
       <div className="v2-record-layout">
-        <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#current-teachers">01 在籍確認の先生</a><a href="#roster">02 人事台帳</a><a href="#history">03 学校沿革</a><a href="#nearby">04 同じ地域</a></aside>
+        <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#school-profile">01 学校台帳</a><a href="#current-teachers">02 在籍確認の先生</a><a href="#all-people">03 全年度在籍者</a><a href="#roster">04 人事台帳</a><a href="#history">05 学校沿革</a><a href="#nearby">06 同じ地域</a></aside>
         <div className="v2-record-body">
+          <section id="school-profile" className="v2-record-section"><div className="v2-section-heading"><span>01</span><div><p>SCHOOL FOLIO</p><h2>学校台帳</h2></div></div><div className="v2-folio-grid"><div><small>恒久学校ID</small><strong><Fingerprint />{target.id}</strong></div><div><small>学校種</small><strong>{target.schoolType}</strong></div><div><small>設置者</small><strong>{target.founder}</strong></div><div><small>郵便番号</small><strong>{target.postalCode || 'データ未登録'}</strong></div><div className="wide"><small>所在地</small><strong><MapPin />{target.prefecture} {target.municipality} {target.address || '詳細住所未登録'}</strong></div><div className="wide"><small>旧校名・名称履歴</small><strong>{target.formerNames?.length ? target.formerNames.join(' ／ ') : '記録なし'}</strong></div></div></section>
           <section id="current-teachers" className="v2-record-section">
-            <div className="v2-section-heading"><span>01</span><div><p>CURRENT PERSONNEL INDEX</p><h2>最新公報で在籍が確認された先生</h2></div></div>
+            <div className="v2-section-heading"><span>02</span><div><p>CURRENT PERSONNEL INDEX</p><h2>最新公報で在籍が確認された先生</h2></div></div>
             <div className="v2-current-teachers-note"><ShieldCheck /><p><b>{target.latestConfirmedYear}年度までの公報・人事記録を基に表示</b><span>「現在勤務中」の実時間情報ではありません。異動後の未反映や同姓同名候補が含まれる場合があります。</span></p></div>
             {currentTeachers.length > 0 ? <>
               <div className="v2-current-teachers-summary"><span>在籍確認</span><strong>{currentTeachers.length}</strong><small>名の候補</small></div>
@@ -90,8 +106,9 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
               {currentTeachers.length > 12 && <button className="v2-current-teachers-more" onClick={() => setShowAllCurrentTeachers((value) => !value)}>{showAllCurrentTeachers ? '12名までに戻す' : `すべての${currentTeachers.length}名を表示`}</button>}
             </> : <p className="v2-record-empty">現在、この学校と紐づく最新年度の先生候補は収録されていません。</p>}
           </section>
+          <section id="all-people" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>ALL-YEAR PEOPLE INDEX</p><h2>全年度の在籍記録</h2></div></div><p className="v2-record-prose">収録済みの年度別人事台帳を横断した索引です。在籍期間を推定せず、記録がある年度だけを表示します。</p><label className="v2-people-search"><Search /><input value={peopleQuery} onChange={(event) => setPeopleQuery(event.target.value)} placeholder="先生の氏名で絞り込み" /></label><div className="v2-all-people-list">{historicalPeople.length ? historicalPeople.map((person, index) => { const candidate = allTeachers.find((item) => item.id === person.teacherId); const position = 'position' in person ? person.position : index === 0 ? '校長' : '管理職'; return <button key={`${person.teacherId}-${person.fiscalYear}-${index}`} disabled={!candidate} onClick={() => candidate && onSelectTeacher(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{person.name}</b><small>{position}</small></div><time>{person.fiscalYear}<small>年度記録</small></time>{candidate ? <ArrowUpRight /> : <em>人物詳細未収録</em>}</button>; }) : <p className="v2-record-empty">条件に一致する在籍記録はありません。</p>}</div></section>
           <section id="roster" className="v2-record-section">
-            <div className="v2-section-heading"><span>02</span><div><p>PERSONNEL REGISTER</p><h2>年度別人事台帳</h2></div></div>
+            <div className="v2-section-heading"><span>04</span><div><p>PERSONNEL REGISTER</p><h2>年度別人事台帳</h2></div></div>
             <div className="v2-year-tabs">{target.personnelByYear.map((item) => <button className={activeYear === item.fiscalYear ? 'is-active' : ''} key={item.fiscalYear} onClick={() => setYear(item.fiscalYear)}>{item.fiscalYear}年度</button>)}</div>
             {roster ? <>
               <div className="v2-leadership">
@@ -107,8 +124,8 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
               </div>)}</div>
             </> : <p className="v2-record-empty">この年度の人事台帳はありません。</p>}
           </section>
-          <section id="history" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>SCHOOL HISTORY</p><h2>学校沿革</h2></div></div>{target.history.length ? <ol className="v2-history-list">{target.history.map((item, index) => <li key={`${item.year}-${index}`}><time>{item.year}</time><span>{item.type}</span><div><p>{item.description}</p><small>{item.sourceNote}</small></div></li>)}</ol> : <p className="v2-record-empty">現在表示できる沿革記録はありません。</p>}</section>
-          <section id="nearby" className="v2-record-section"><div className="v2-section-heading"><span>04</span><div><p>NEARBY INDEX</p><h2>{target.municipality}の学校</h2></div></div><div className="v2-related-list">{relatedSchools.map((candidate, index) => <button key={candidate.id} onClick={() => onSelectSchool(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.schoolType}・人事{candidate.totalConfirmedPersonnelCount}件</small></div><ArrowUpRight /></button>)}</div></section>
+          <section id="history" className="v2-record-section"><div className="v2-section-heading"><span>05</span><div><p>SCHOOL HISTORY</p><h2>学校沿革</h2></div></div>{target.history.length ? <ol className="v2-history-list">{target.history.map((item, index) => <li key={`${item.year}-${index}`}><time>{item.year}</time><span>{item.type}</span><div><p>{item.description}</p><small>{item.sourceNote}</small></div></li>)}</ol> : <p className="v2-record-empty">現在表示できる沿革記録はありません。</p>}</section>
+          <section id="nearby" className="v2-record-section"><div className="v2-section-heading"><span>06</span><div><p>NEARBY INDEX</p><h2>{target.municipality}の学校</h2></div></div><div className="v2-related-list">{relatedSchools.map((candidate, index) => <button key={candidate.id} onClick={() => onSelectSchool(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.schoolType}・人事{candidate.totalConfirmedPersonnelCount}件</small></div><ArrowUpRight /></button>)}</div></section>
         </div>
       </div>
     </main>
