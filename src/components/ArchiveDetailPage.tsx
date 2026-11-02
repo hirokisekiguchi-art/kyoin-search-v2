@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, ArrowUpRight, BookOpen, Building2, Check, ExternalLink, FileText, History, MapPin, MessageSquare, Plus, ShieldCheck, User, Users } from 'lucide-react';
 import { getSchoolGoogleMapsUrl, OFFICIAL_SOURCES_DATA } from '../data/archiveData';
 import { OfficialSource, School, TeacherCandidate } from '../types';
@@ -18,9 +18,17 @@ interface ArchiveDetailPageProps {
 
 export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, school, allTeachers, allSchools, onBack, onSelectTeacher, onSelectSchool, onOpenSource, onToggleCompare, isCompared }) => {
   const [year, setYear] = useState<number | null>(null);
+  const [showAllCurrentTeachers, setShowAllCurrentTeachers] = useState(false);
   const currentSchool = teacher ? allSchools.find((candidate) => candidate.id === teacher.currentSchoolId) : undefined;
   const relatedTeachers = useMemo(() => teacher ? allTeachers.filter((candidate) => candidate.id !== teacher.id && candidate.currentSchoolId === teacher.currentSchoolId).slice(0, 8) : [], [allTeachers, teacher]);
   const homonyms = useMemo(() => teacher ? allTeachers.filter((candidate) => candidate.id !== teacher.id && candidate.name === teacher.name).slice(0, 6) : [], [allTeachers, teacher]);
+  const currentTeachers = useMemo(() => school ? allTeachers
+    .filter((candidate) => candidate.currentSchoolId === school.id)
+    .sort((a, b) => b.latestFiscalYear - a.latestFiscalYear || a.name.localeCompare(b.name, 'ja')) : [], [allTeachers, school]);
+
+  useEffect(() => {
+    setShowAllCurrentTeachers(false);
+  }, [school?.id]);
 
   if (!teacher && !school) return null;
 
@@ -71,10 +79,19 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
         <div className="v2-record-actions"><button className={isCompared ? 'is-added' : ''} onClick={() => onToggleCompare(target)}>{isCompared ? <Check /> : <Plus />}{isCompared ? '比較に追加済み' : '学校を比較'}</button><a href={target.googleMapsUrl || getSchoolGoogleMapsUrl(target)} target="_blank" rel="noreferrer"><MessageSquare />Googleマップで口コミを見る<ExternalLink /></a></div>
       </header>
       <div className="v2-record-layout">
-        <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#roster">01 人事台帳</a><a href="#history">02 学校沿革</a><a href="#nearby">03 同じ地域</a></aside>
+        <aside className="v2-record-index"><p>ON THIS PAGE</p><a href="#current-teachers">01 在籍確認の先生</a><a href="#roster">02 人事台帳</a><a href="#history">03 学校沿革</a><a href="#nearby">04 同じ地域</a></aside>
         <div className="v2-record-body">
+          <section id="current-teachers" className="v2-record-section">
+            <div className="v2-section-heading"><span>01</span><div><p>CURRENT PERSONNEL INDEX</p><h2>最新公報で在籍が確認された先生</h2></div></div>
+            <div className="v2-current-teachers-note"><ShieldCheck /><p><b>{target.latestConfirmedYear}年度までの公報・人事記録を基に表示</b><span>「現在勤務中」の実時間情報ではありません。異動後の未反映や同姓同名候補が含まれる場合があります。</span></p></div>
+            {currentTeachers.length > 0 ? <>
+              <div className="v2-current-teachers-summary"><span>在籍確認</span><strong>{currentTeachers.length}</strong><small>名の候補</small></div>
+              <div className="v2-current-teachers-list">{currentTeachers.slice(0, showAllCurrentTeachers ? currentTeachers.length : 12).map((candidate, index) => <button key={`${candidate.id}-${index}`} onClick={() => onSelectTeacher(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.currentPosition}</small></div><time>{candidate.latestFiscalYear}<small>年度確認</small></time><em className={candidate.verificationStatus === '確認済み' ? 'verified' : ''}>{candidate.verificationStatus}</em><ArrowUpRight /></button>)}</div>
+              {currentTeachers.length > 12 && <button className="v2-current-teachers-more" onClick={() => setShowAllCurrentTeachers((value) => !value)}>{showAllCurrentTeachers ? '12名までに戻す' : `すべての${currentTeachers.length}名を表示`}</button>}
+            </> : <p className="v2-record-empty">現在、この学校と紐づく最新年度の先生候補は収録されていません。</p>}
+          </section>
           <section id="roster" className="v2-record-section">
-            <div className="v2-section-heading"><span>01</span><div><p>PERSONNEL REGISTER</p><h2>年度別人事台帳</h2></div></div>
+            <div className="v2-section-heading"><span>02</span><div><p>PERSONNEL REGISTER</p><h2>年度別人事台帳</h2></div></div>
             <div className="v2-year-tabs">{target.personnelByYear.map((item) => <button className={activeYear === item.fiscalYear ? 'is-active' : ''} key={item.fiscalYear} onClick={() => setYear(item.fiscalYear)}>{item.fiscalYear}年度</button>)}</div>
             {roster ? <>
               <div className="v2-leadership">
@@ -90,8 +107,8 @@ export const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ teacher, s
               </div>)}</div>
             </> : <p className="v2-record-empty">この年度の人事台帳はありません。</p>}
           </section>
-          <section id="history" className="v2-record-section"><div className="v2-section-heading"><span>02</span><div><p>SCHOOL HISTORY</p><h2>学校沿革</h2></div></div>{target.history.length ? <ol className="v2-history-list">{target.history.map((item, index) => <li key={`${item.year}-${index}`}><time>{item.year}</time><span>{item.type}</span><div><p>{item.description}</p><small>{item.sourceNote}</small></div></li>)}</ol> : <p className="v2-record-empty">現在表示できる沿革記録はありません。</p>}</section>
-          <section id="nearby" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>NEARBY INDEX</p><h2>{target.municipality}の学校</h2></div></div><div className="v2-related-list">{relatedSchools.map((candidate, index) => <button key={candidate.id} onClick={() => onSelectSchool(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.schoolType}・人事{candidate.totalConfirmedPersonnelCount}件</small></div><ArrowUpRight /></button>)}</div></section>
+          <section id="history" className="v2-record-section"><div className="v2-section-heading"><span>03</span><div><p>SCHOOL HISTORY</p><h2>学校沿革</h2></div></div>{target.history.length ? <ol className="v2-history-list">{target.history.map((item, index) => <li key={`${item.year}-${index}`}><time>{item.year}</time><span>{item.type}</span><div><p>{item.description}</p><small>{item.sourceNote}</small></div></li>)}</ol> : <p className="v2-record-empty">現在表示できる沿革記録はありません。</p>}</section>
+          <section id="nearby" className="v2-record-section"><div className="v2-section-heading"><span>04</span><div><p>NEARBY INDEX</p><h2>{target.municipality}の学校</h2></div></div><div className="v2-related-list">{relatedSchools.map((candidate, index) => <button key={candidate.id} onClick={() => onSelectSchool(candidate)}><span>{String(index + 1).padStart(2, '0')}</span><div><b>{candidate.name}</b><small>{candidate.schoolType}・人事{candidate.totalConfirmedPersonnelCount}件</small></div><ArrowUpRight /></button>)}</div></section>
         </div>
       </div>
     </main>
